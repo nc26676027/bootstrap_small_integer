@@ -51,8 +51,11 @@ func (eval Evaluator) EvaluateAndScaleNew(ct *rlwe.Ciphertext, scaling complex12
 	Qi := eval.GetParameters().Q()
 
 	targetScale := res.Scale
+	if evm.mod1PolyCosine.Depth() != evm.mod1PolySine.Depth() {
+		panic("Cosine and Sine function depth is not the same, check mod1_parameters.go!")
+	}
 	for i := 0; i < evm.DoubleAngle; i++ {
-		targetScale = targetScale.Mul(rlwe.NewScale(Qi[ct.Level()-evm.Mod1Poly.Depth()-evm.DoubleAngle+i+1]))
+		targetScale = targetScale.Mul(rlwe.NewScale(Qi[ct.Level()-evm.mod1PolyCosine.Depth()-evm.DoubleAngle+i+1]))
 		targetScale.Value.Sqrt(&targetScale.Value)
 	}
 
@@ -70,27 +73,28 @@ func (eval Evaluator) EvaluateAndScaleNew(ct *rlwe.Ciphertext, scaling complex12
 	// Double angle
 	sqrt2pi := complex(evm.Sqrt2Pi, 0)
 
-	var mod1Poly bignum.Polynomial
+	var mod1PolyCosine, mod1PolySine bignum.Polynomial
 	if evm.Mod1InvPoly == nil {
 
 		scaling := cmplx.Pow(scaling, complex(1/evm.IntervalShrinkFactor(), 0))
 
 		mul := bignum.NewComplexMultiplier().Mul
 
-		mod1Poly = evm.Mod1Poly.Clone()
+		mod1PolyCosine = evm.mod1PolyCosine.Clone()
 
 		scalingPowBig := bignum.NewComplex().SetComplex128(scaling)
 
-		for i := range mod1Poly.Coeffs {
-			if mod1Poly.Coeffs[i] != nil {
-				mul(mod1Poly.Coeffs[i], scalingPowBig, mod1Poly.Coeffs[i])
+		for i := range mod1PolyCosine.Coeffs {
+			if mod1PolyCosine.Coeffs[i] != nil {
+				mul(mod1PolyCosine.Coeffs[i], scalingPowBig, mod1PolyCosine.Coeffs[i])
 			}
 		}
 
 		sqrt2pi *= scaling
 
 	} else {
-		mod1Poly = evm.Mod1Poly
+		mod1PolyCosine = evm.mod1PolyCosine
+		mod1PolySine = evm.mod1PolySine
 	}
 	// fmt.Printf("mod1Poly: %v\n", mod1Poly)
 	// //Chao Added
@@ -110,10 +114,16 @@ func (eval Evaluator) EvaluateAndScaleNew(ct *rlwe.Ciphertext, scaling complex12
 	// eval.Encoder.
 	// eval.Mul()
 
-
-	if res, err = eval.PolynomialEvaluator.Evaluate(res, mod1Poly, rlwe.NewScale(targetScale)); err != nil {
-		return nil, fmt.Errorf("cannot Evaluate: %w", err)
+	var res_cosine, res_sine *rlwe.Ciphertext
+	if res_cosine, err = eval.PolynomialEvaluator.Evaluate(res, mod1PolyCosine, rlwe.NewScale(targetScale)); err != nil {
+		return nil, fmt.Errorf("cannot Evaluate Cosine: %w", err)
 	}
+	if res_sine, err = eval.PolynomialEvaluator.Evaluate(res, mod1PolySine, rlwe.NewScale(targetScale)); err != nil {
+		return nil, fmt.Errorf("cannot Evaluate Sine: %w", err)
+	}
+	// EXP(2*pi x/r) = cos(2*pi x/r) + i*sin(2*pi x/r)
+	eval.Mul(res_sine, 1i, res_sine)
+	eval.Add(res_cosine, res_sine, res)
 
 	for i := 0; i < evm.DoubleAngle; i++ {
 		sqrt2pi *= sqrt2pi

@@ -12,6 +12,7 @@ import (
 	"github.com/tuneinsight/lattigo/v6/utils"
 	"github.com/tuneinsight/lattigo/v6/utils/bignum"
 	"github.com/tuneinsight/lattigo/v6/utils/cosine"
+	exp "github.com/tuneinsight/lattigo/v6/utils/euler_exp"
 )
 
 // Type is the type of function/approximation used to evaluate x mod 1.
@@ -79,7 +80,8 @@ type Parameters struct {
 	DoubleAngle     int                // Number of rescale and double angle formula (only applies for cos and is ignored if sin is used)
 	QDiff           float64            // Q / 2^round(Log2(Q))
 	Sqrt2Pi         float64            // (1/2pi)^(1.0/scFac)
-	Mod1Poly        bignum.Polynomial  // Polynomial for f: x mod 1
+	mod1PolyCosine  bignum.Polynomial  // Polynomial for f: x mod 1
+	mod1PolySine    bignum.Polynomial  // Polynomial for f: x mod 1
 	Mod1InvPoly     *bignum.Polynomial // Polynomial for f^-1: (x mod 1)^-1
 	K               float64            // interval [-K, K]
 }
@@ -109,6 +111,9 @@ func (evp Parameters) MessageRatio() float64 {
 func NewParametersFromLiteral(params ckks.Parameters, evm ParametersLiteral) (Parameters, error) {
 	var mod1InvPoly *bignum.Polynomial
 	var mod1Poly bignum.Polynomial
+	var mod1PolyCosine bignum.Polynomial
+	var mod1PolySine bignum.Polynomial
+
 	var sqrt2pi float64
 
 	doubleAngle := evm.DoubleAngle
@@ -173,12 +178,21 @@ func NewParametersFromLiteral(params ckks.Parameters, evm ParametersLiteral) (Pa
 		}
 
 	case CosDiscrete:
-		mod1Poly = bignum.NewPolynomial(bignum.Chebyshev, cosine.ApproximateCos(evm.K, evm.Mod1Degree, float64(uint(1<<evm.LogMessageRatio)), int(evm.DoubleAngle)), [2]float64{-K, K})
-		mod1Poly.IsOdd = false
+		PolyCosine, PolySine := exp.ApproximateExp(evm.K, evm.Mod1Degree, float64(uint(1<<evm.LogMessageRatio)), int(evm.DoubleAngle))
+		mod1PolyCosine = bignum.NewPolynomial(bignum.Chebyshev, PolyCosine, [2]float64{-K, K})
+		mod1PolySine = bignum.NewPolynomial(bignum.Chebyshev, PolySine, [2]float64{-K, K})
 
-		for i := range mod1Poly.Coeffs {
+		mod1PolyCosine.IsOdd = false
+		mod1PolySine.IsEven = false
+
+		for i := range mod1PolyCosine.Coeffs {
 			if i&1 == 1 {
-				mod1Poly.Coeffs[i] = nil
+				mod1PolyCosine.Coeffs[i] = nil
+			}
+		}
+		for i := range mod1PolySine.Coeffs {
+			if i&1 == 0 {
+				mod1PolySine.Coeffs[i] = nil
 			}
 		}
 
@@ -216,7 +230,8 @@ func NewParametersFromLiteral(params ckks.Parameters, evm ParametersLiteral) (Pa
 		DoubleAngle:     doubleAngle,
 		QDiff:           qDiff,
 		Sqrt2Pi:         sqrt2pi,
-		Mod1Poly:        mod1Poly,
+		mod1PolyCosine:  mod1PolyCosine,
+		mod1PolySine: 	 mod1PolySine,
 		Mod1InvPoly:     mod1InvPoly,
 		K:               float64(evm.K),
 	}, nil

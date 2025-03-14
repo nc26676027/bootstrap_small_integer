@@ -33,7 +33,7 @@ func TestPowerBasis(t *testing.T) {
 		basis.Value[3] = rlwe.NewCiphertextRandom(prng, params, 2, levelQ)
 		basis.Value[4] = rlwe.NewCiphertextRandom(prng, params, 1, levelQ)
 		basis.Value[8] = rlwe.NewCiphertextRandom(prng, params, 1, levelQ)
-
+		// fmt.Println("basis.Value[2]: ", basis.Value[2])
 		buffer.RequireSerializerCorrect(t, &basis)
 	})
 }

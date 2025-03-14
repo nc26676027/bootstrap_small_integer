@@ -63,7 +63,7 @@ func chebyshevNodes(n int, interval Interval) (nodes []*big.Float) {
 	y := new(big.Float).Sub(&interval.B, &interval.A)
 	y.Mul(y, half)
 
-	PiOverN := Pi(prec)
+	PiOverN := Pi(prec) // pi over big.Number
 	PiOverN.Quo(PiOverN, new(big.Float).SetInt64(int64(n)))
 
 	for k := 1; k < n+1; k++ {

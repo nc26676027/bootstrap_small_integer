@@ -97,6 +97,7 @@ func run(tc *ckks.TestContext, t *testing.T) {
 
 		poly := bignum.NewPolynomial(bignum.Monomial, coeffs, nil)
 
+
 		for i := range values {
 			values[i] = poly.Evaluate(values[i])
 		}
