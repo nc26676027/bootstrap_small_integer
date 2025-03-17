@@ -44,7 +44,6 @@ import (
 	"github.com/tuneinsight/lattigo/v6/core/rlwe"
 	"github.com/tuneinsight/lattigo/v6/ring"
 	"github.com/tuneinsight/lattigo/v6/schemes/ckks"
-	"github.com/tuneinsight/lattigo/v6/utils/sampling"
 )
 
 var flagShort = flag.Bool("short", true, "run the example with a smaller and insecure ring degree.")
@@ -55,7 +54,7 @@ func main() {
 
 	// Default LogN, which with the following defined parameters
 	// provides a security of 128-bit.
-	LogN := 16
+	LogN := 13
 
 	if *flagShort {
 		LogN -= 3
@@ -72,16 +71,18 @@ func main() {
 	// For the purpose of the example, only one prime is allocated to the circuit in the slots domain
 	// and no prime is allocated to the circuit in the coeffs domain.
 
-	LogDefaultScale := 45
+	LogDefaultScale := 51
 
 	q0 := []int{55}                                    // 3) ScaleDown & 4) ModUp
-	qiSlotsToCoeffs := []int{39, 39, 39}               // 1) SlotsToCoeffs
-	qiCircuitSlots := []int{LogDefaultScale, LogDefaultScale,LogDefaultScale,LogDefaultScale,LogDefaultScale,LogDefaultScale}           // 0) Circuit in the slot domain
+	qiSlotsToCoeffs := []int{51, 51, 51}               // 1) SlotsToCoeffs
+	// qiCircuitSlots := []int{LogDefaultScale, LogDefaultScale,LogDefaultScale,LogDefaultScale,LogDefaultScale,LogDefaultScale}           // 0) Circuit in the slot domain
+	qiInterpolation := []int{51, 51, 51, 51, 51}
 	qiEvalMod := []int{60, 60, 60, 60, 60, 60, 60, 60} // 6) EvalMod
-	qiCoeffsToSlots := []int{56, 56, 56}           // 5) CoeffsToSlots
+	qiCoeffsToSlots := []int{56, 56, 56, 56}           // 5) CoeffsToSlots
 
 	LogQ := append(q0, qiSlotsToCoeffs...)
-	LogQ = append(LogQ, qiCircuitSlots...)
+	// LogQ = append(LogQ, qiCircuitSlots...)
+	LogQ = append(LogQ, qiInterpolation...)
 	LogQ = append(LogQ, qiEvalMod...)
 	LogQ = append(LogQ, qiCoeffsToSlots...)
 
@@ -120,7 +121,7 @@ func main() {
 		Mod1Degree:      30,               // Depth 5
 		DoubleAngle:     3,                // Depth 3
 		K:               16,               // With EphemeralSecretWeight = 32 and 2^{15} slots, ensures < 2^{-138.7} failure probability
-		LogMessageRatio: 10,               // q/|m| = 2^10
+		LogMessageRatio: 0,               // q/|m| = 2^10
 		Mod1InvDegree:   0,                // Depth 0
 	}
 
@@ -197,7 +198,8 @@ func main() {
 	// Generate a random plaintext with values uniformly distributed in [-1, 1] for the real and imaginary part.
 	valuesWant := make([]complex128, params.MaxSlots())
 	for i := range valuesWant {
-		valuesWant[i] = sampling.RandComplex128(-1, 1)
+		// valuesWant[i] = sampling.RandComplex128(-1, 1)
+		valuesWant[i] = 1
 	}
 
 	// We encrypt at level 0
@@ -262,7 +264,7 @@ func main() {
 	if ciphertext, _, err = eval.ScaleDown(ciphertext); err != nil {
 		panic(err)
 	}
-
+	fmt.Println("Scale after ScaleDown: ", ciphertext.LogScale())
 	// Step 4 : Extend the basis from q to Q
 	if ciphertext, err = eval.ModUp(ciphertext); err != nil {
 		panic(err)
@@ -289,18 +291,18 @@ func main() {
 		panic(err)
 	}
 
-	if imag, err = eval.EvalMod(imag); err != nil {
-		panic(err)
-	}
+	// if imag, err = eval.EvalMod(imag); err != nil {
+	// 	panic(err)
+	// }
 
 	// Recombines the real and imaginary part
-	if err = eval.Evaluator.Mul(imag, 1i, imag); err != nil {
-		panic(err)
-	}
+	// if err = eval.Evaluator.Mul(imag, 1i, imag); err != nil {
+	// 	panic(err)
+	// }
 
-	if err = eval.Evaluator.Add(real, imag, ciphertext); err != nil {
-		panic(err)
-	}
+	// if err = eval.Evaluator.Add(real, imag, ciphertext); err != nil {
+	// 	panic(err)
+	// }
 	elapsed = time.Since(Start)
 	fmt.Println("Mod : ", elapsed)
 	fmt.Println("Done")

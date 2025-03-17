@@ -9,7 +9,7 @@ import (
 func main() {
 	t := 256.0
 	nodesCount := int(t)
-	testPoints := []float64{0, 1.001, 2.01, 3.02, 4., 6.001}
+	testPoints := []float64{0, 1.001, 2.001, 3.0001, 4., 6.001}
 
 	coeffs := hermiteInterpolation(nodesCount)
 	fmt.Println("Interpolation polynomial degree: ", )

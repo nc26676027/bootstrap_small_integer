@@ -14,11 +14,11 @@ func f( x int)  float64{
 }
 
 func main() {
-	t := 16.0
+	t := 64.0
 	nodesCount := int(t)
-	testPoints := []float64{0, 1.01, 2.0, 3, 4, 6.01}
+	testPoints := []float64{0, 1.01, 2.0, 3.001, 4, 6.01}
 
-	coeffs := hermiteInterpolation(nodesCount)
+	coeffs := HermiteInterpolation(nodesCount)
 	fmt.Println("Interpolation polynomial degree: ", )
 	testInterpolation(coeffs, testPoints, t)
 }
@@ -70,7 +70,7 @@ func buildHermiteMatrix(nodesCount int, roots []complex128) ([][]complex128, []c
 	return matrix, rhs
 }
 
-func hermiteInterpolation(nodesCount int) []complex128 {
+func HermiteInterpolation(nodesCount int) []complex128 {
 	roots := generateRoots(nodesCount)
 	matrix, rhs := buildHermiteMatrix(nodesCount, roots)
 	coeffs := solveMatrix(matrix, rhs)

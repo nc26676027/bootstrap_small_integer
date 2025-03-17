@@ -167,6 +167,10 @@ func (eval Evaluator) EvaluateAndScaleNew(ct *rlwe.Ciphertext, scaling complex12
 
 	// Multiplies back by q
 	res.Scale = ct.Scale
+	if res, err = eval.PolynomialEvaluator.Evaluate(res, evm.mod1PolyHermite, rlwe.NewScale(res.Scale)); err != nil {
+		return nil, fmt.Errorf("cannot Evaluate Cosine: %w", err)
+	}
+
 	return res, nil
 }
 

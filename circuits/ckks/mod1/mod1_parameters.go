@@ -82,6 +82,7 @@ type Parameters struct {
 	Sqrt2Pi         float64            // (1/2pi)^(1.0/scFac)
 	mod1PolyCosine  bignum.Polynomial  // Polynomial for f: x mod 1
 	mod1PolySine    bignum.Polynomial  // Polynomial for f: x mod 1
+	mod1Hermite		bignum.Polynomial  // Interpolation extract exp(2pi i x/t) -> f(x)
 	Mod1InvPoly     *bignum.Polynomial // Polynomial for f^-1: (x mod 1)^-1
 	K               float64            // interval [-K, K]
 }
@@ -113,6 +114,7 @@ func NewParametersFromLiteral(params ckks.Parameters, evm ParametersLiteral) (Pa
 	var mod1Poly bignum.Polynomial
 	var mod1PolyCosine bignum.Polynomial
 	var mod1PolySine bignum.Polynomial
+	var mod1PolyHermite bignum.Polynomial
 
 	var sqrt2pi float64
 
@@ -195,6 +197,10 @@ func NewParametersFromLiteral(params ckks.Parameters, evm ParametersLiteral) (Pa
 				mod1PolySine.Coeffs[i] = nil
 			}
 		}
+		HermiteCoeffs := bignum.HermiteInterpolation(4)
+		mod1PolyHermite = bignum.NewPolynomial(bignum.Monomial, HermiteCoeffs, [2]float64{1, 1})
+		
+
 
 	case CosContinuous:
 		mod1Poly = bignum.ChebyshevApproximation(cos2pi, bignum.Interval{
@@ -232,6 +238,7 @@ func NewParametersFromLiteral(params ckks.Parameters, evm ParametersLiteral) (Pa
 		Sqrt2Pi:         sqrt2pi,
 		mod1PolyCosine:  mod1PolyCosine,
 		mod1PolySine: 	 mod1PolySine,
+		mod1Hermite:     mod1PolyHermite,
 		Mod1InvPoly:     mod1InvPoly,
 		K:               float64(evm.K),
 	}, nil
