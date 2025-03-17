@@ -278,8 +278,8 @@ func main() {
 	// The `imag` ciphertext can be ignored if the original input
 	// is purely real.
 	Start = time.Now()
-	var real, imag *rlwe.Ciphertext
-	if real, imag, err = eval.CoeffsToSlots(ciphertext); err != nil {
+	var real *rlwe.Ciphertext
+	if real, _, err = eval.CoeffsToSlots(ciphertext); err != nil {
 		panic(err)
 	}
 	elapsed = time.Since(Start)
@@ -290,7 +290,7 @@ func main() {
 	if real, err = eval.EvalMod(real); err != nil {
 		panic(err)
 	}
-
+	
 	// if imag, err = eval.EvalMod(imag); err != nil {
 	// 	panic(err)
 	// }

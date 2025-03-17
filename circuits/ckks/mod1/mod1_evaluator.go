@@ -73,7 +73,7 @@ func (eval Evaluator) EvaluateAndScaleNew(ct *rlwe.Ciphertext, scaling complex12
 	// Double angle
 	sqrt2pi := complex(evm.Sqrt2Pi, 0)
 
-	var mod1PolyCosine, mod1PolySine bignum.Polynomial
+	var mod1PolyCosine, mod1PolySine, mod1PolyHermite bignum.Polynomial
 	if evm.Mod1InvPoly == nil {
 
 		scaling := cmplx.Pow(scaling, complex(1/evm.IntervalShrinkFactor(), 0))
@@ -96,6 +96,7 @@ func (eval Evaluator) EvaluateAndScaleNew(ct *rlwe.Ciphertext, scaling complex12
 		mod1PolyCosine = evm.mod1PolyCosine
 		mod1PolySine = evm.mod1PolySine
 	}
+	
 	// fmt.Printf("mod1Poly: %v\n", mod1Poly)
 	// //Chao Added
 	// if (true){
@@ -113,14 +114,19 @@ func (eval Evaluator) EvaluateAndScaleNew(ct *rlwe.Ciphertext, scaling complex12
 	// eval.Encode(vec, pt)
 	// eval.Encoder.
 	// eval.Mul()
-
+	fmt.Println("Before evaluate all poly level: ", res.Level())
+	res_cos := res.CopyNew()
 	var res_cosine, res_sine *rlwe.Ciphertext
-	if res_cosine, err = eval.PolynomialEvaluator.Evaluate(res, mod1PolyCosine, rlwe.NewScale(targetScale)); err != nil {
+	if res_cosine, err = eval.PolynomialEvaluator.Evaluate(res_cos, mod1PolyCosine, rlwe.NewScale(targetScale)); err != nil {
 		return nil, fmt.Errorf("cannot Evaluate Cosine: %w", err)
 	}
-	if res_sine, err = eval.PolynomialEvaluator.Evaluate(res, mod1PolySine, rlwe.NewScale(targetScale)); err != nil {
+
+	res_sin := res.CopyNew()
+	fmt.Println("Before evaluate sine level: ", res_sin.Level())
+	if res_sine, err = eval.PolynomialEvaluator.Evaluate(res_sin, mod1PolySine, rlwe.NewScale(targetScale)); err != nil {
 		return nil, fmt.Errorf("cannot Evaluate Sine: %w", err)
 	}
+	
 	// EXP(2*pi x/r) = cos(2*pi x/r) + i*sin(2*pi x/r)
 	eval.Mul(res_sine, 1i, res_sine)
 	eval.Add(res_cosine, res_sine, res)
@@ -167,7 +173,9 @@ func (eval Evaluator) EvaluateAndScaleNew(ct *rlwe.Ciphertext, scaling complex12
 
 	// Multiplies back by q
 	res.Scale = ct.Scale
-	if res, err = eval.PolynomialEvaluator.Evaluate(res, evm.mod1PolyHermite, rlwe.NewScale(res.Scale)); err != nil {
+	
+	mod1PolyHermite = evm.mod1PolyHermite
+	if res, err = eval.PolynomialEvaluator.Evaluate(res, mod1PolyHermite, rlwe.NewScale(res.Scale)); err != nil {
 		return nil, fmt.Errorf("cannot Evaluate Cosine: %w", err)
 	}
 

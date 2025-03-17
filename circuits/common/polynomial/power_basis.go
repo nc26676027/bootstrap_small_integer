@@ -63,6 +63,7 @@ func (p *PowerBasis) GenPower(n int, lazy bool, eval schemes.Evaluator) (err err
 		}
 
 		if rescale {
+			fmt.Println("\n\nfinal rescale: ")
 			if err = eval.Rescale(p.Value[n], p.Value[n]); err != nil {
 				return fmt.Errorf("genpower: p.Value[%d]: final rescale: %w", n, err)
 			}
